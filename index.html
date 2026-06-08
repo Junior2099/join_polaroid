@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layout de Fotos A4</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,wght@0,300;0,400;1,300&display=swap');
+
+  :root {
+    --bg: #0e0e0f;
+    --surface: #161618;
+    --border: #2a2a2e;
+    --accent: #c8f04a;
+    --accent-dim: #8aaa2e;
+    --text: #e8e8e4;
+    --text-muted: #6b6b72;
+    --danger: #ff5f5f;
+
+    /* Portrait A4 at 96dpi */
+    --canvas-w: 1123px;
+    --canvas-h: 794px;
+  }
+
+  /* Landscape override */
+  .landscape {
+    --canvas-w: 1123px;
+    --canvas-h: 794px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%;
+    max-width: 1600px;
+    padding: 32px 40px 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  header span {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: #1e2a0a;
+    border: 1px solid #3d5215;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .btn-orient {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: auto;
+  }
+  .btn-orient:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-orient svg { flex-shrink: 0; }
+
+  /* ── Main Layout ── */
+  main {
+    width: 100%;
+    max-width: 1600px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 0;
+    padding: 32px 40px;
+    align-items: start;
+  }
+
+  /* ── Side Panel ── */
+  .panel {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-right: 32px;
+  }
+
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: #1a2208;
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-zone .icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .upload-zone p {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .upload-zone strong {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ── Queue ── */
+  .queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 2px;
+  }
+  .queue-count {
+    background: var(--accent);
+    color: #0e0e0f;
+    border-radius: 99px;
+    padding: 1px 7px;
+    font-weight: 500;
+    font-size: 10px;
+  }
+
+  .queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .queue-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    transition: border-color 0.15s;
+    cursor: grab;
+  }
+  .queue-item:hover { border-color: #444; }
+  .queue-item img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+  .queue-item .name {
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .queue-item .remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .queue-item .remove:hover { color: var(--danger); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    width: 100%;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0e0e0f;
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: #d4fa50; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { background: #2d3a15; color: #4a5a22; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: #444; color: var(--text); }
+
+  .btn-group { display: flex; gap: 8px; }
+  .btn-group .btn { flex: 1; }
+
+  /* ── Info Box ── */
+  .info-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+  .info-box b { color: var(--text); font-weight: 500; }
+
+  /* ── Canvas Area ── */
+  .canvas-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .pages-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    align-self: flex-start;
+    padding-left: 4px;
+  }
+
+  /* ── The A4 Canvas ── */
+  .canvas-wrapper {
+    position: relative;
+  }
+  .page-num {
+    position: absolute;
+    top: -22px;
+    left: 0;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+
+  .a4-canvas {
+    width: var(--canvas-w);
+    height: var(--canvas-h);
+    background: #ffffff;
+    position: relative;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 80px;
+    gap: 32px;
+    transition: width 0.3s ease, height 0.3s ease;
+  }
+
+  .img-slot {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .img-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .img-slot.empty {
+    border: 2px dashed #ddd;
+  }
+  .img-slot.empty::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Placeholder text inside empty slot */
+  .slot-placeholder {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #bbb;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── Progress overlay ── */
+  .saving-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(14,14,15,0.85);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .saving-overlay.active { display: flex; }
+  .saving-overlay p {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+  .saving-overlay .progress-bar {
+    width: 280px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .saving-overlay .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.2s;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    gap: 12px;
+    color: var(--text-muted);
+  }
+  .empty-state .big-icon { font-size: 48px; opacity: 0.3; }
+  .empty-state p { font-size: 12px; letter-spacing: 0.06em; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Layout de Fotos</h1>
+  <span id="headerBadge">A4 · Paisagem · 2 fotos/página</span>
+  <button class="btn-orient" id="orientBtn" title="Alternar orientação">
+    <svg id="orientIcon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    <span id="orientLabel">Retrato</span>
+  </button>
+</header>
+
+<main>
+  <!-- Panel -->
+  <aside class="panel">
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/*" multiple>
+      <span class="icon">📷</span>
+      <p><strong>Clique ou arraste</strong> imagens aqui<br>JPG, PNG, WEBP · qualquer quantidade</p>
+    </div>
+
+    <div class="queue-header">
+      <span>Fila de imagens</span>
+      <span class="queue-count" id="queueCount">0</span>
+    </div>
+
+    <div class="queue-list" id="queueList">
+      <!-- items injetados via JS -->
+    </div>
+
+    <div class="info-box" id="infoBox">
+      <b>Como funciona</b><br>
+      Cada página A4 Paisagem (297×210 mm) acomoda <b>2 fotos</b> lado a lado. Ao salvar, páginas adicionais são geradas automaticamente em sequência.
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-ghost" id="clearBtn">Limpar</button>
+      <button class="btn btn-primary" id="saveBtn" disabled>⬇ Salvar páginas</button>
+    </div>
+  </aside>
+
+  <!-- Canvas preview area -->
+  <section class="canvas-area" id="canvasArea">
+    <div class="empty-state" id="emptyState">
+      <span class="big-icon">🖼️</span>
+      <p>Adicione imagens para visualizar o layout</p>
+    </div>
+  </section>
+</main>
+
+<!-- Saving overlay -->
+<div class="saving-overlay" id="savingOverlay">
+  <p id="savingLabel">Gerando páginas…</p>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+const images = [];
+let idCounter = 0;
+let isLandscape = true;
+
+// Export dimensions (2× scale of 96dpi A4)
+const PORTRAIT  = { w: 1588, h: 2246 };
+const LANDSCAPE = { w: 2246, h: 1588 };
+const EXPORT_PAD = 280;
+const EXPORT_GAP = 60;
+
+// DOM
+const fileInput     = document.getElementById('fileInput');
+const uploadZone    = document.getElementById('uploadZone');
+const queueList     = document.getElementById('queueList');
+const queueCount    = document.getElementById('queueCount');
+const canvasArea    = document.getElementById('canvasArea');
+const emptyState    = document.getElementById('emptyState');
+const saveBtn       = document.getElementById('saveBtn');
+const clearBtn      = document.getElementById('clearBtn');
+const savingOverlay = document.getElementById('savingOverlay');
+const savingLabel   = document.getElementById('savingLabel');
+const progressFill  = document.getElementById('progressFill');
+const orientBtn     = document.getElementById('orientBtn');
+const orientLabel   = document.getElementById('orientLabel');
+const orientIcon    = document.getElementById('orientIcon');
+const headerBadge   = document.getElementById('headerBadge');
+const infoBox       = document.getElementById('infoBox');
+
+// ── Orientation toggle ─────────────────────────────────
+orientBtn.addEventListener('click', () => {
+  isLandscape = !isLandscape;
+  updateOrientationUI();
+  renderPreviews();
+});
+
+function updateOrientationUI() {
+  if (isLandscape) {
+    orientLabel.textContent = 'Retrato';
+    orientIcon.innerHTML = `
+      <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M4 6.5h8M4 9.5h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>`;
+    headerBadge.textContent = 'A4 · Paisagem · 2 fotos/página';
+    infoBox.innerHTML = '<b>Como funciona</b><br>Cada página A4 Paisagem (297×210 mm) acomoda <b>2 fotos</b> lado a lado. Ao salvar, páginas adicionais são geradas automaticamente em sequência.';
+  } else {
+    orientLabel.textContent = 'Paisagem';
+    orientIcon.innerHTML = `
+      <rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>`;
+    headerBadge.textContent = 'A4 · Retrato · 2 fotos/página';
+    infoBox.innerHTML = '<b>Como funciona</b><br>Cada página A4 Retrato (210×297 mm) acomoda <b>2 fotos</b> centralizadas. Ao salvar, páginas adicionais são geradas automaticamente em sequência.';
+  }
+}
+
+// ── Upload handling ────────────────────────────────────
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(files) {
+  [...files].forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(file);
+    images.push({ id: ++idCounter, file, url, name: file.name });
+  });
+  fileInput.value = '';
+  renderQueue();
+  renderPreviews();
+}
+
+// ── Queue render ───────────────────────────────────────
+function renderQueue() {
+  queueCount.textContent = images.length;
+  queueList.innerHTML = '';
+  images.forEach((img, i) => {
+    const item = document.createElement('div');
+    item.className = 'queue-item';
+    item.innerHTML = `
+      <img src="${img.url}" alt="">
+      <span class="name">${i + 1}. ${img.name}</span>
+      <button class="remove" data-id="${img.id}" title="Remover">×</button>
+    `;
+    queueList.appendChild(item);
+  });
+
+  queueList.querySelectorAll('.remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = +btn.dataset.id;
+      const idx = images.findIndex(x => x.id === id);
+      if (idx !== -1) { URL.revokeObjectURL(images[idx].url); images.splice(idx, 1); }
+      renderQueue();
+      renderPreviews();
+    });
+  });
+
+  saveBtn.disabled = images.length === 0;
+}
+
+// ── Preview render ─────────────────────────────────────
+function renderPreviews() {
+  canvasArea.querySelectorAll('.canvas-wrapper').forEach(el => el.remove());
+  const label = canvasArea.querySelector('.pages-label');
+  if (label) label.remove();
+
+  if (images.length === 0) {
+    emptyState.style.display = 'flex';
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  const pageCount = Math.ceil(images.length / 2);
+
+  const lbl = document.createElement('div');
+  lbl.className = 'pages-label';
+  lbl.textContent = `${pageCount} página${pageCount > 1 ? 's' : ''} · ${images.length} imagem${images.length > 1 ? 'ns' : ''} · ${isLandscape ? 'Paisagem' : 'Retrato'}`;
+  canvasArea.insertBefore(lbl, canvasArea.firstChild);
+
+  for (let p = 0; p < pageCount; p++) {
+    const imgA = images[p * 2] || null;
+    const imgB = images[p * 2 + 1] || null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'canvas-wrapper';
+
+    const num = document.createElement('div');
+    num.className = 'page-num';
+    num.textContent = `Página ${p + 1} / ${pageCount}`;
+    wrapper.appendChild(num);
+
+    const canvas = document.createElement('div');
+    canvas.className = 'a4-canvas' + (isLandscape ? ' landscape' : '');
+
+    // Apply CSS variable-driven size via inline style
+    if (isLandscape) {
+      canvas.style.width  = '1123px';
+      canvas.style.height = '794px';
+    } else {
+      canvas.style.width  = '794px';
+      canvas.style.height = '1123px';
+    }
+
+    [imgA, imgB].forEach(imgData => {
+      const slot = document.createElement('div');
+      slot.className = 'img-slot' + (imgData ? '' : ' empty');
+      if (imgData) {
+        const el = document.createElement('img');
+        el.src = imgData.url;
+        el.alt = imgData.name;
+        slot.appendChild(el);
+      } else {
+        const ph = document.createElement('span');
+        ph.className = 'slot-placeholder';
+        ph.textContent = 'vazio';
+        slot.appendChild(ph);
+      }
+      canvas.appendChild(slot);
+    });
+
+    wrapper.appendChild(canvas);
+    canvasArea.appendChild(wrapper);
+  }
+}
+
+// ── Clear ──────────────────────────────────────────────
+clearBtn.addEventListener('click', () => {
+  images.forEach(img => URL.revokeObjectURL(img.url));
+  images.length = 0;
+  renderQueue();
+  renderPreviews();
+});
+
+// ── Save (export) ──────────────────────────────────────
+saveBtn.addEventListener('click', async () => {
+  if (images.length === 0) return;
+
+  const dim = isLandscape ? LANDSCAPE : PORTRAIT;
+  const pageCount = Math.ceil(images.length / 2);
+  savingOverlay.classList.add('active');
+
+  const loaded = await Promise.all(images.map(img => loadImage(img.url)));
+
+  for (let p = 0; p < pageCount; p++) {
+    savingLabel.textContent = `Gerando página ${p + 1} de ${pageCount}…`;
+    progressFill.style.width = ((p / pageCount) * 100) + '%';
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = dim.w;
+    canvas.height = dim.h;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, dim.w, dim.h);
+
+    let slots;
+    if (isLandscape) {
+      // Landscape: side by side (wider canvas)
+      const slotW = (dim.w - EXPORT_PAD * 2 - EXPORT_GAP) / 2;
+      const slotH = dim.h - EXPORT_PAD * 2;
+      slots = [
+        { x: EXPORT_PAD,                     y: EXPORT_PAD, w: slotW, h: slotH },
+        { x: EXPORT_PAD + slotW + EXPORT_GAP, y: EXPORT_PAD, w: slotW, h: slotH },
+      ];
+    } else {
+      // Portrait: side by side (narrower slots, taller canvas)
+      const slotW = (dim.w - EXPORT_PAD * 2 - EXPORT_GAP) / 2;
+      const slotH = dim.h - EXPORT_PAD * 2;
+      slots = [
+        { x: EXPORT_PAD,                     y: EXPORT_PAD, w: slotW, h: slotH },
+        { x: EXPORT_PAD + slotW + EXPORT_GAP, y: EXPORT_PAD, w: slotW, h: slotH },
+      ];
+    }
+
+    for (let s = 0; s < 2; s++) {
+      const imgIdx = p * 2 + s;
+      const slot = slots[s];
+      if (imgIdx < loaded.length) {
+        const img = loaded[imgIdx];
+        const scale = Math.min(slot.w / img.width, slot.h / img.height);
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        const dx = slot.x + (slot.w - dw) / 2;
+        const dy = slot.y + (slot.h - dh) / 2;
+        ctx.drawImage(img, dx, dy, dw, dh);
+      }
+    }
+
+    const orient = isLandscape ? 'paisagem' : 'retrato';
+    await new Promise(resolve => {
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `layout-a4-${orient}-pagina-${String(p + 1).padStart(2, '0')}.jpg`;
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); resolve(); }, 300);
+      }, 'image/jpeg', 0.95);
+    });
+
+    await sleep(200);
+  }
+
+  progressFill.style.width = '100%';
+  await sleep(400);
+  savingOverlay.classList.remove('active');
+  progressFill.style.width = '0%';
+});
+
+// ── Utils ──────────────────────────────────────────────
+function loadImage(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
